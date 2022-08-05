@@ -1,5 +1,5 @@
 <template>
-  <div>关于页面:{{data?.data}}</div>
+  <div>关于页面:{{data}}</div>
 </template>
 
 <script>
@@ -11,7 +11,7 @@ export default {
   name: 'About',
   data() {
     return {
-        data: {}
+        data: ''
     }
   },
   async mounted() {
@@ -19,27 +19,29 @@ export default {
 
       // '/proxy/lkblog'
     const fetcher = (url) => axios.post(url).then((res) => {
-      console.log('About' + ': fetcher', res?.data)
-      this.data = res?.data
-      return res?.data
+      console.log('About' + ': fetcher', res?.data, this.data)
+      // this.data = res?.data
+      return res?.data?.data
     })
-    const { data, error, isValidating, mutate } = await SWR('/proxy/lkblog/ws/api.php', fetcher, {
+    window.fetcher = fetcher
+    const { data, error, isValidating, fetcher: fetcherCall, mutate } = await SWR('/proxy/lkblog/ws/api.php', fetcher, {
+        // refreshInterval: 2000,
         // revalidateOnFocus: false,
         // revalidateOnReconnect: false,
-        revalidateIfStale: false
+        revalidateIfStale: false,
+        onSuccess: (data) => {
+          console.log('About' + ': onSuccess call', data)
+          this.data = data
+        }
     })
-    console.log('About' + ': useSWR', data?.data, error, isValidating)
+    console.log('About' + ': useSWR', data, error, isValidating, fetcherCall)
     window.mutate = () => {
         mutate().then((data) => {
             console.log('About' + ': mutate', data)
-            this.data = data
+            // this.data = data
         })
     }
     this.data = data
-    // return {
-    //   data,
-    //   error
-    // }
   }
 }
 </script>

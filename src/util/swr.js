@@ -8,6 +8,7 @@ export default async function SWR (key, fetcher, options = {}) {
 
     const {url, ...params} = key
     const {
+        refreshInterval = 0,    // TODO 改成根据客户端时间间隔来刷新
         revalidateIfStale = true,
         onError = () => {},
         onErrorRetry = () => {},
@@ -31,9 +32,7 @@ export default async function SWR (key, fetcher, options = {}) {
             {
                 value: {
                     data,
-                    error,
-                    isValidating,
-                    mutate
+                    error
                 },
                 key
             }
@@ -59,7 +58,7 @@ export default async function SWR (key, fetcher, options = {}) {
     const refresh = async () => {
         const value = {}
         isValidating = true
-        const fetch = fetcher(url, params) // useSWR 是这样传params的吗
+        const fetch = fetcher(url, params) // useSWR 是这样传params的吗 答：不是 如果key是对象 会把key直接传给fetcher 如果key是数组 则按多个参数传给fetcher
         try {
             onSuccess(value.data = await fetch)
         } catch (error) {
@@ -79,5 +78,16 @@ export default async function SWR (key, fetcher, options = {}) {
         await refresh()
     }
 
-    return getCache().value
+    // TODO 取缓存的时候 onSuccess 会不会执行
+
+    if (refreshInterval) { // TODO 清除interval
+        window.refreshIntervalKey = setInterval(refresh, refreshInterval)
+    }
+
+    return {
+        ...getCache().value,
+        isValidating,
+        fetcher,
+        mutate
+    }
 }
